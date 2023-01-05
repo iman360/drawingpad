@@ -1,10 +1,16 @@
 package noskan.drawingpad
 
-import androidx.appcompat.app.AppCompatActivity
+import android.content.ContentValues
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
+import android.view.View
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.widget.Button
 import android.widget.ImageButton
+import androidx.appcompat.app.AppCompatActivity
+import java.io.OutputStream
 
 
 class MainActivity : AppCompatActivity() {
@@ -14,10 +20,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var red: Button
     lateinit var green: Button
     lateinit var yellow: Button
-    lateinit var smallBtn:Button
-    lateinit var mediumBtn:Button
-    lateinit var largeBtn:Button
+    lateinit var smallBtn:ImageButton
+    lateinit var mediumBtn:ImageButton
+    lateinit var largeBtn:ImageButton
     lateinit var deleteBtn: ImageButton
+    lateinit var saveBtn:ImageButton
     private val blackColor:Int = -16777216
     private val blueColor:Int = -16776961
     private val redColor:Int = -65536
@@ -29,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 //verifying the views
         draw = findViewById(R.id.draw_view)
         deleteBtn = findViewById(R.id.deleteBtn)
+        saveBtn = findViewById(R.id.saveBtn)
         black = findViewById(R.id.black)
         blue = findViewById(R.id.blue)
         red = findViewById(R.id.red)
@@ -53,6 +61,34 @@ class MainActivity : AppCompatActivity() {
         deleteBtn.setOnClickListener {
             draw.delete()
         }
+        //the save button will save the current canvas which is actually a bitmap
+        //in form of PNG, in the storage
+        saveBtn.setOnClickListener(View.OnClickListener {
+            //getting the bitmap from DrawView class
+            val bmp: Bitmap? = draw.save()
+            //opening a OutputStream to write into the file
+            var imageOutStream: OutputStream? = null
+            val cv = ContentValues()
+            //name of the file
+            cv.put(MediaStore.Images.Media.DISPLAY_NAME, "drawing.png")
+            //type of the file
+            cv.put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            //location of the file to be saved
+            cv.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+
+            //ge the Uri of the file which is to be v=created in the storage
+            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
+            try {
+                //open the output stream with the above uri
+                imageOutStream = contentResolver.openOutputStream(uri!!)
+                //this method writes the files in storage
+                bmp?.compress(Bitmap.CompressFormat.PNG, 100, imageOutStream)
+                //close the output stream after use
+                imageOutStream!!.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        })
 //color button
         black.setOnClickListener {
             draw.setColor(blackColor)
